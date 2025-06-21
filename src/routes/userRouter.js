@@ -3,8 +3,8 @@ import {
   AuthenticatedUser,
   LoginUser,
   RegisterUser,
-} from "../controllers/userController";
-import { CheckAuth } from "../middlewares/AuthCheck";
+} from "../controllers/userController.js";
+import { CheckAuth } from "../middlewares/AuthCheck.js";
 
 export const userRouter = express.Router();
 

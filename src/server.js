@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
-import { healthRouter } from "./routes/healthRouter";
-import { configEnvs, PORT } from "./envs";
-import { CustomErrorHandler } from "./middlewares/errorHandler";
-import { DBConnect } from "./config/db";
+import { healthRouter } from "./routes/healthRouter.js";
+import { configEnvs, PORT } from "./envs/index.js";
+import { CustomErrorHandler } from "./middlewares/errorHandler.js";
+import { DBConnect } from "./config/db.js";
+import { userRouter } from "./routes/userRouter.js";
 const app = express();
 configEnvs();
 
@@ -17,6 +18,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
+app.use("/api/user", userRouter);
 
 app.use(CustomErrorHandler);
 

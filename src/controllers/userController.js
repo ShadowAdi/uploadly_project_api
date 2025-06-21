@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
-import { UserModel } from "../models/UserSchema";
-import { logger } from "../utils/logger";
-import { CustomTryCatch } from "../utils/CustomTryCatch";
-import { AppError } from "../utils/AppError";
-import { TokenGenerator } from "../utils/TokenGenerator";
+import { UserModel } from "../models/UserSchema.js";
+import { logger } from "../utils/logger.js";
+import { CustomTryCatch } from "../utils/CustomTryCatch.js";
+import { AppError } from "../utils/AppError.js";
+import { TokenGenerator } from "../utils/TokenGenerator.js";
 
 export const RegisterUser = CustomTryCatch(async (req, res, next) => {
   const { email, password } = req.body;
