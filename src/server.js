@@ -22,8 +22,12 @@ app.use("/api/user", userRouter);
 
 app.use(CustomErrorHandler);
 
-app.listen(PORT, () => {
-  DBConnect();
-  logger.info("Server Started at the port of " + PORT);
-  console.log("Server Started");
-});
+try {
+  await DBConnect();
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+} catch (err) {
+  console.error("Server failed to start due to DB error:", err.message);
+  process.exit(1);
+}
