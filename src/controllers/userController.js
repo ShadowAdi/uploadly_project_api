@@ -29,8 +29,8 @@ export const RegisterUser = CustomTryCatch(async (req, res, next) => {
       new AppError(`User already exists with the mail: ${email}`, 404)
     );
   }
-  const hashedPassword = bcrypt.hash(password, 10);
-  const newUser = await UserModel({ email, password: hashedPassword });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = new UserModel({ email, password: hashedPassword });
   await newUser.save();
   logger.info("User is created");
   return res.status(201).json({
@@ -64,7 +64,7 @@ export const LoginUser = CustomTryCatch(async (req, res, next) => {
       new AppError(`Failed to get the user with the email: ${email}`, 404)
     );
   }
-  const isPasswordCorrect = bcrypt.compare(password, isUserExist.password);
+  const isPasswordCorrect =await bcrypt.compare(password, isUserExist.password);
   if (!isPasswordCorrect) {
     logger.error(
       `Invalid Credentails email: ${email} and password: ${password}`
