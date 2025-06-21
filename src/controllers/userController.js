@@ -80,11 +80,48 @@ export const LoginUser = CustomTryCatch(async (req, res, next) => {
     email: isUserExist.email,
     sub: isUserExist._id,
   };
-  const token =await TokenGenerator(payload);
+  const token = await TokenGenerator(payload);
   return res.status(200).json({
     success: true,
     statusCode: 200,
     user: isUserExist,
     token,
+  });
+});
+
+export const AuthenticatedUser = CustomTryCatch(async (req, res, next) => {
+  const user = req.user;
+  if (!user) {
+    logger.error(`Failed to get the authenticated user ${user}`);
+    console.log(`Failed to get the authenticated user ${user}`);
+    return next(
+      new AppError(`Failed to get the authenticated user ${user}`, 404)
+    );
+  }
+  logger.info("Authenticated User ", user);
+  const { email, sub } = user;
+  if (!sub) {
+    logger.error(`Failed to get the authenticated user ${sub}`);
+    console.log(`Failed to get the authenticated user ${sub}`);
+    return next(
+      new AppError(`Failed to get the authenticated user ${sub}`, 404)
+    );
+  }
+  const userFound = await UserModel.findById(sub).select("-password");
+  if (!userFound) {
+    logger.error(`User With Id Do Not Exist: ${sub}`);
+    console.log(`User With Id Do Not Exist: ${sub}`);
+    return next(new AppError(`User With Id Do Not Exist: ${sub}`, 404));
+  }
+  if (userFound.email !== email) {
+    logger.error(`User With email Do Not Exist: ${email}`);
+    console.log(`User With email Do Not Exist: ${email}`);
+    return next(new AppError(`User With email Do Not Exist: ${email}`, 404));
+  }
+  return res.status(200).json({
+    statusCode: 200,
+    user: userFound,
+    message: "User Found",
+    success: true,
   });
 });
