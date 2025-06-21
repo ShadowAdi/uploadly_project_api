@@ -3,7 +3,7 @@ import { UserModel } from "../models/UserSchema";
 import { logger } from "../utils/logger";
 import { CustomTryCatch } from "../utils/CustomTryCatch";
 import { AppError } from "../utils/AppError";
-
+import { TokenGenerator } from "../utils/TokenGenerator";
 
 export const RegisterUser = CustomTryCatch(async (req, res, next) => {
   const { email, password } = req.body;
@@ -37,5 +37,54 @@ export const RegisterUser = CustomTryCatch(async (req, res, next) => {
     statusCode: 201,
     message: "User is created",
     success: true,
+  });
+});
+
+export const LoginUser = CustomTryCatch(async (req, res, next) => {
+  const data = req.body;
+  const { email, password } = data;
+  if (!email || !password) {
+    logger.error(
+      `Required Data is not present Email:${email}, password:${password}, `
+    );
+    console.log(
+      `Required Data is not present Email:${email}, password:${password}`
+    );
+    return next(
+      new AppError(
+        `Required Data is not present Email:${email}, password:${password}`,
+        404
+      )
+    );
+  }
+  const isUserExist = await UserModel.findOne({ email });
+  if (!isUserExist) {
+    logger.error(`Failed to get user with email: ${email}`);
+    return next(
+      new AppError(`Failed to get the user with the email: ${email}`, 404)
+    );
+  }
+  const isPasswordCorrect = bcrypt.compare(password, isUserExist.password);
+  if (!isPasswordCorrect) {
+    logger.error(
+      `Invalid Credentails email: ${email} and password: ${password}`
+    );
+    return next(
+      new AppError(
+        `Invalid Credentails email: ${email} and password: ${password}`,
+        404
+      )
+    );
+  }
+  const payload = {
+    email: isUserExist.email,
+    sub: isUserExist._id,
+  };
+  const token =await TokenGenerator(payload);
+  return res.status(200).json({
+    success: true,
+    statusCode: 200,
+    user: isUserExist,
+    token,
   });
 });
