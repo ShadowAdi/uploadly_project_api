@@ -10,4 +10,4 @@ export const userRouter = express.Router();
 
 userRouter.post("/register", RegisterUser);
 userRouter.post("/login", LoginUser);
-userRouter.post("/me", CheckAuth, AuthenticatedUser);
+userRouter.get("/me", CheckAuth, AuthenticatedUser);
