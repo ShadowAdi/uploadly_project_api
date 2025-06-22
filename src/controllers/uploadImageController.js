@@ -8,8 +8,6 @@ import { processAvatarImage } from "../utils/imageProcessor.js";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
-
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -171,4 +169,75 @@ export const DeleteImage = CustomTryCatch(async (req, res, next) => {
     message: "Avatar Deleted successfully.",
     url: null,
   });
+});
+
+export const UpdateImage = CustomTryCatch(async (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No image file provided." });
+  }
+  const user = req.user;
+  if (!user) {
+    logger.error(`Failed to get the authenticated user ${user}`);
+    return next(new AppError(`Failed to get the authenticated user`, 404));
+  }
+  const { email, sub } = user;
+  if (!sub) {
+    logger.error(`Failed to get the authenticated user ID ${sub}`);
+    return next(new AppError(`Failed to get the authenticated user ID`, 404));
+  }
+  const userFound = await UserModel.findById(sub).select("-password");
+  if (!userFound) {
+    logger.error(`User with ID does not exist: ${sub}`);
+    return next(new AppError(`User with ID does not exist: ${sub}`, 404));
+  }
+  if (userFound.email !== email) {
+    logger.error(`User with email does not exist: ${email}`);
+    return next(new AppError(`User with email does not exist: ${email}`, 404));
+  }
+
+  const oldFileName = userFound.avatar?.filename;
+  if (oldFileName) {
+    const oldPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "Uploads",
+      "avatars",
+      oldFileName
+    );
+    console.log("Attempting to delete old file:", oldPath);
+    try {
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+        logger.info(`Deleted old avatar file: ${oldFileName}`);
+      } else {
+        logger.warn(`Old avatar file not found: ${oldPath}`);
+      }
+    } catch (err) {
+      logger.error(`Error deleting old avatar file: ${err.message}`);
+      return next(
+        new AppError(`Failed to delete old avatar file: ${err.message}`, 500)
+      );
+    }
+  }
+
+  try {
+    const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
+    userFound.avatar = {
+      filename: fileName,
+      url: url,
+      uploadedAt: new Date(),
+    };
+    await userFound.save();
+    return res.status(200).json({
+      success: true,
+      message: "Avatar updated successfully.",
+      url,
+    });
+  } catch (err) {
+    logger.error(`Failed to process new avatar image: ${err.message}`);
+    return next(
+      new AppError(`Failed to process new avatar image: ${err.message}`, 500)
+    );
+  }
 });
