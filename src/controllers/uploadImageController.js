@@ -7,6 +7,7 @@ import fs from "fs";
 import { processAvatarImage } from "../utils/imageProcessor.js";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
+import { isNsfw } from "../config/nsfw.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -81,6 +82,12 @@ export const UploadImage = CustomTryCatch(async (req, res, next) => {
     if (fs.existsSync(oldPath)) {
       fs.unlinkSync(oldPath);
     }
+  }
+
+  try {
+    await isNsfw(req.file.buffer);
+  } catch (err) {
+    return next(new AppError("NSFW image detected. Upload denied.", 400));
   }
 
   const { fileName, url } = await processAvatarImage(req.file.buffer, sub);

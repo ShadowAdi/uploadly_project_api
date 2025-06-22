@@ -15,7 +15,7 @@ uploadRouter.get("/user-profile/:userId", GetUserImage);
 uploadRouter.post(
   "/upload",
   CheckAuth,
-  expressRateLimiter,
+  // expressRateLimiter,
   multerUpload.single("upload"),
   UploadImage
 );
