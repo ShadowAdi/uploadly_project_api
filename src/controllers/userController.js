@@ -98,7 +98,6 @@ export const AuthenticatedUser = CustomTryCatch(async (req, res, next) => {
       new AppError(`Failed to get the authenticated user ${user}`, 404)
     );
   }
-  logger.info("Authenticated User ", user);
   const { email, sub } = user;
   if (!sub) {
     logger.error(`Failed to get the authenticated user ${sub}`);

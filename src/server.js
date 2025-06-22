@@ -5,6 +5,7 @@ import { configEnvs, PORT } from "./envs/index.js";
 import { CustomErrorHandler } from "./middlewares/errorHandler.js";
 import { DBConnect } from "./config/db.js";
 import { userRouter } from "./routes/userRouter.js";
+import { uploadRouter } from "./routes/uploadRouter.js";
 const app = express();
 configEnvs();
 
@@ -19,6 +20,8 @@ app.use(express.json());
 
 app.use("/api/health", healthRouter);
 app.use("/api/user", userRouter);
+app.use("/api/avatar", uploadRouter);
+
 
 app.use(CustomErrorHandler);
 
