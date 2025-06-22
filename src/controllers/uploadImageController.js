@@ -202,6 +202,12 @@ export const UpdateImage = CustomTryCatch(async (req, res, next) => {
     return next(new AppError(`User with email does not exist: ${email}`, 404));
   }
 
+  try {
+    await isNsfw(req.file.buffer);
+  } catch (err) {
+    return next(new AppError("NSFW image detected. Upload denied.", 400));
+  }
+
   const oldFileName = userFound.avatar?.filename;
   if (oldFileName) {
     const oldPath = path.join(
