@@ -85,7 +85,8 @@ export const UploadImage = CustomTryCatch(async (req, res, next) => {
   }
 
   try {
-    await isNsfw(req.file.buffer);
+    const { buffer, mimetype, originalname } = req.file;
+    await isNsfw(buffer, mimetype, originalname);
   } catch (err) {
     return next(new AppError("NSFW image detected. Upload denied.", 400));
   }
@@ -203,7 +204,8 @@ export const UpdateImage = CustomTryCatch(async (req, res, next) => {
   }
 
   try {
-    await isNsfw(req.file.buffer);
+    const { buffer, mimetype, originalname } = req.file;
+    await isNsfw(buffer, mimetype, originalname);
   } catch (err) {
     return next(new AppError("NSFW image detected. Upload denied.", 400));
   }

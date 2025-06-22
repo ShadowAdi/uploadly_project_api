@@ -1,20 +1,25 @@
 import axios from "axios";
 import FormData from "form-data";
 import { logger } from "../utils/logger.js";
+import { NSFW_API_SECRET, NSFW_API_USER } from "../envs/index.js";
 
-export const isNsfw = async (imageBuffer) => {
+export const isNsfw = async (
+  imageBuffer,
+  mimetype = "image/jpeg",
+  originalname = "image.jpg"
+) => {
   const formData = new FormData();
   formData.append("media", imageBuffer, {
-    filename: "image.jpg",
-    contentType: "image/jpeg",
+    filename: originalname,
+    contentType: mimetype,
   });
 
   formData.append(
     "models",
     "nudity-2.1,weapon,alcohol,recreational_drug,medical,offensive-2.0,faces,scam,text-content,face-attributes,gore-2.0,text,violence,self-harm"
   );
-  formData.append("api_user", "961347415");
-  formData.append("api_secret", "empUieqyacC8bdqxL2atG6E5DReAUpid");
+  formData.append("api_user", `${NSFW_API_USER}`);
+  formData.append("api_secret", `${NSFW_API_SECRET}`);
 
   try {
     const response = await axios.post(
