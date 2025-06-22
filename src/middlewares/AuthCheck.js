@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { JWT_SECRET_KEY } from "../envs/index.js";
 import { AppError } from "../utils/AppError.js";
 import { logger } from "../utils/logger.js";
@@ -5,6 +6,7 @@ import jwt from "jsonwebtoken";
 
 export const CheckAuth = async (req, res, next) => {
   try {
+    console.log("Hii")
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -22,9 +24,14 @@ export const CheckAuth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, Jwt_Secret);
+    console.log("Decoded JWT payload:", decoded); // Log the payload
+    if (!mongoose.Types.ObjectId.isValid(decoded.sub)) {
+      logger.error(`Invalid user ID in token: ${decoded.sub}`);
+      throw new Error("Invalid user id");
+    }
     req.user = decoded;
 
-    next(); 
+    next();
   } catch (error) {
     logger.error("Error in checking auth: " + error.message);
     return next(new AppError("Unauthorized access", 401));

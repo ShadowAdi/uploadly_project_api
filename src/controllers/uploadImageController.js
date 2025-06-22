@@ -1,7 +1,10 @@
-import { UserModel } from "../models/UserSchema";
-import { AppError } from "../utils/AppError";
-import { CustomTryCatch } from "../utils/CustomTryCatch";
-import { logger } from "../utils/logger";
+import path from "path";
+import { UserModel } from "../models/UserSchema.js";
+import { AppError } from "../utils/AppError.js";
+import { CustomTryCatch } from "../utils/CustomTryCatch.js";
+import { logger } from "../utils/logger.js";
+import fs from "fs";
+import { processAvatarImage } from "../utils/imageProcessor.js";
 
 export const GetUserImage = CustomTryCatch(async (req, res, next) => {
   const { userId } = req.params;
@@ -36,6 +39,9 @@ export const GetUserImage = CustomTryCatch(async (req, res, next) => {
 });
 
 export const UploadImage = CustomTryCatch(async (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "No image file provided." });
+  }
   const user = req.user;
   if (!user) {
     logger.error(`Failed to get the authenticated user ${user}`);
@@ -63,4 +69,25 @@ export const UploadImage = CustomTryCatch(async (req, res, next) => {
     console.log(`User With email Do Not Exist: ${email}`);
     return next(new AppError(`User With email Do Not Exist: ${email}`, 404));
   }
+
+  const oldFileName = req.user.avatar?.filename;
+  if (oldFileName) {
+    const oldPath = path.join("uploads", "avatars", oldFileName);
+    if (fs.existsSync(oldPath)) {
+      fs.unlinkSync(oldPath);
+    }
+  }
+
+  const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
+  userFound.avatar = {
+    filename: fileName,
+    url: url,
+    uploadedAt: new Date(),
+  };
+  await userFound.save();
+  return res.status(200).json({
+    success: true,
+    message: "Avatar uploaded successfully.",
+    url,
+  });
 });
