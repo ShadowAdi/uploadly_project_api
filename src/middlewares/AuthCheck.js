@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 
 export const CheckAuth = async (req, res, next) => {
   try {
-    console.log("Hii")
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -24,7 +23,6 @@ export const CheckAuth = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, Jwt_Secret);
-    console.log("Decoded JWT payload:", decoded); // Log the payload
     if (!mongoose.Types.ObjectId.isValid(decoded.sub)) {
       logger.error(`Invalid user ID in token: ${decoded.sub}`);
       throw new Error("Invalid user id");
