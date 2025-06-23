@@ -3,7 +3,7 @@ import {
   CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET,
   CLOUDINARY_CLOUD_NAME,
-} from "../envs";
+} from "../envs/index.js";
 export const cloudinaryConfig = cloudinary.v2;
 
 cloudinaryConfig.config({
