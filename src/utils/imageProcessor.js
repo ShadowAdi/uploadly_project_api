@@ -13,15 +13,12 @@ export const processAvatarImage = async (buffer, userId) => {
     .png({ quality: 90 })
     .toBuffer();
 
-  const publicId = `avatar_${userId}_${Date.now()}_${uuidv4()}`;
-
   const result = await new Promise((resolve, reject) => {
     const stream = cloudinaryConfig.uploader.upload_stream(
       {
         folder: `avatars/${userId}`,
-        public_id: publicId,
         resource_type: "image",
-        format: "png",
+        public_id: `avatar_${userId}_${Date.now()}`,
       },
       (err, result) => {
         if (err) return reject(err);
