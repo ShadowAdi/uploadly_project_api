@@ -96,31 +96,23 @@ export const UploadImage = CustomTryCatch(async (req, res, next) => {
     if (userFound.avatar?.filename) {
       await cloudinaryConfig.uploader.destroy(userFound.avatar.filename);
     }
+  } catch (err) {
+    logger.warn(`Could not delete old Cloudinary image: ${err.message}`);
+  }
 
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinaryConfig.uploader.upload_stream(
-        {
-          folder: `avatars/${sub}`,
-          resource_type: "image",
-          public_id: `avatar_${sub}_${Date.now()}`,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(req.file.buffer);
-    });
+  try {
+    const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
     userFound.avatar = {
-      filename: uploadResult.public_id,
-      url: uploadResult.secure_url,
+      filename: fileName,
+      url: url,
       uploadedAt: new Date(),
     };
     await userFound.save();
+
     return res.status(200).json({
       success: true,
       message: "Avatar uploaded successfully.",
-      url: uploadResult.secure_url,
+      url,
     });
   } catch (error) {
     logger.error(`Failed to upload image to Cloudinary: ${error.message}`);
@@ -290,33 +282,28 @@ export const UpdateImage = CustomTryCatch(async (req, res, next) => {
     if (userFound.avatar?.filename) {
       await cloudinaryConfig.uploader.destroy(userFound.avatar.filename);
       logger.info(
-        `Deleted old avatar from Cloudinary: ${userFound.avatar.filename}`
+        `Old avatar deleted from Cloudinary: ${userFound.avatar.filename}`
       );
     }
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinaryConfig.uploader.upload_stream(
-        {
-          folder: `avatars/${sub}`,
-          resource_type: "image",
-          public_id: `avatar_${sub}_${Date.now()}`,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(req.file.buffer);
-    });
+  } catch (err) {
+    logger.warn(`Failed to delete old Cloudinary image: ${err.message}`);
+  }
+
+  try {
+    const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
+
     userFound.avatar = {
-      filename: uploadResult.public_id,
-      url: uploadResult.secure_url,
+      filename: fileName,
+      url: url,
       uploadedAt: new Date(),
     };
+
     await userFound.save();
+
     return res.status(200).json({
       success: true,
       message: "Avatar updated successfully.",
-      url: uploadResult.secure_url,
+      url,
     });
   } catch (error) {
     logger.error(`Failed to update avatar: ${error.message}`);
