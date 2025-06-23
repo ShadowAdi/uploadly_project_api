@@ -204,13 +204,9 @@ export const DeleteImage = CustomTryCatch(async (req, res, next) => {
       url: null,
     });
   } catch (error) {
-     logger.error(`Error deleting avatar from Cloudinary: ${err.message}`);
-    return next(
-      new AppError(`Failed to delete avatar: ${err.message}`, 500)
-    );
+    logger.error(`Error deleting avatar from Cloudinary: ${err.message}`);
+    return next(new AppError(`Failed to delete avatar: ${err.message}`, 500));
   }
-
-
 });
 
 export const UpdateImage = CustomTryCatch(async (req, res, next) => {
@@ -244,49 +240,86 @@ export const UpdateImage = CustomTryCatch(async (req, res, next) => {
     return next(new AppError("NSFW image detected. Upload denied.", 400));
   }
 
-  const oldFileName = userFound.avatar?.filename;
-  if (oldFileName) {
-    const oldPath = path.join(
-      __dirname,
-      "..",
-      "..",
-      "Uploads",
-      "avatars",
-      oldFileName
-    );
-    console.log("Attempting to delete old file:", oldPath);
-    try {
-      if (fs.existsSync(oldPath)) {
-        fs.unlinkSync(oldPath);
-        logger.info(`Deleted old avatar file: ${oldFileName}`);
-      } else {
-        logger.warn(`Old avatar file not found: ${oldPath}`);
-      }
-    } catch (err) {
-      logger.error(`Error deleting old avatar file: ${err.message}`);
-      return next(
-        new AppError(`Failed to delete old avatar file: ${err.message}`, 500)
-      );
-    }
-  }
+  // const oldFileName = userFound.avatar?.filename;
+  // if (oldFileName) {
+  //   const oldPath = path.join(
+  //     __dirname,
+  //     "..",
+  //     "..",
+  //     "Uploads",
+  //     "avatars",
+  //     oldFileName
+  //   );
+  //   console.log("Attempting to delete old file:", oldPath);
+  //   try {
+  //     if (fs.existsSync(oldPath)) {
+  //       fs.unlinkSync(oldPath);
+  //       logger.info(`Deleted old avatar file: ${oldFileName}`);
+  //     } else {
+  //       logger.warn(`Old avatar file not found: ${oldPath}`);
+  //     }
+  //   } catch (err) {
+  //     logger.error(`Error deleting old avatar file: ${err.message}`);
+  //     return next(
+  //       new AppError(`Failed to delete old avatar file: ${err.message}`, 500)
+  //     );
+  //   }
+  // }
+
+  // try {
+  //   const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
+  //   userFound.avatar = {
+  //     filename: fileName,
+  //     url: url,
+  //     uploadedAt: new Date(),
+  //   };
+  //   await userFound.save();
+  //   return res.status(200).json({
+  //     success: true,
+  //     message: "Avatar updated successfully.",
+  //     url,
+  //   });
+  // } catch (err) {
+  //   logger.error(`Failed to process new avatar image: ${err.message}`);
+  //   return next(
+  //     new AppError(`Failed to process new avatar image: ${err.message}`, 500)
+  //   );
+  // }
 
   try {
-    const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
+    if (userFound.avatar?.filename) {
+      await cloudinaryConfig.uploader.destroy(userFound.avatar.filename);
+      logger.info(
+        `Deleted old avatar from Cloudinary: ${userFound.avatar.filename}`
+      );
+    }
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinaryConfig.uploader.upload_stream(
+        {
+          folder: `avatars/${sub}`,
+          resource_type: "image",
+          public_id: `avatar_${sub}_${Date.now()}`,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
     userFound.avatar = {
-      filename: fileName,
-      url: url,
+      filename: uploadResult.public_id,
+      url: uploadResult.secure_url,
       uploadedAt: new Date(),
     };
     await userFound.save();
     return res.status(200).json({
       success: true,
       message: "Avatar updated successfully.",
-      url,
+      url: uploadResult.secure_url,
     });
-  } catch (err) {
-    logger.error(`Failed to process new avatar image: ${err.message}`);
-    return next(
-      new AppError(`Failed to process new avatar image: ${err.message}`, 500)
-    );
+  } catch (error) {
+    logger.error(`Failed to update avatar: ${error.message}`);
+    return next(new AppError(`Failed to update avatar: ${error.message}`, 500));
   }
 });
