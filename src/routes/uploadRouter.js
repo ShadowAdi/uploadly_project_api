@@ -6,7 +6,7 @@ import {
   UpdateImage,
   UploadImage,
 } from "../controllers/uploadImageController.js";
-import { multerUpload } from "../middlewares/upload.js";
+import { handleMulterErrors, multerUpload } from "../middlewares/upload.js";
 import { expressRateLimiter } from "../middlewares/uploadRateLimiter.js";
 
 export const uploadRouter = express.Router();
@@ -17,12 +17,14 @@ uploadRouter.post(
   CheckAuth,
   expressRateLimiter,
   multerUpload.single("upload"),
+  handleMulterErrors,
   UploadImage
 );
 uploadRouter.put(
   "/upload",
   CheckAuth,
   multerUpload.single("upload"),
+  handleMulterErrors,
   UpdateImage
 );
 uploadRouter.delete("/upload", CheckAuth, DeleteImage);
