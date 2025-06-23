@@ -156,7 +156,7 @@ export const DeleteImage = CustomTryCatch(async (req, res, next) => {
     return next(new AppError(`User with email does not exist: ${email}`, 404));
   }
 
-  const filename = userFound.avatar?.filename; // Fix: Use userFound, not user
+  const filename = userFound.avatar?.filename;
   if (!filename) {
     logger.info(`No avatar found for user: ${sub}`);
     return res.status(200).json({
@@ -165,41 +165,52 @@ export const DeleteImage = CustomTryCatch(async (req, res, next) => {
       url: null,
     });
   }
-  const filePath = path.join(
-    __dirname,
-    "..",
-    "..",
-    "Uploads",
-    "avatars",
-    filename
-  );
-  console.log("Attempting to delete file:", filePath);
+  // const filePath = path.join(
+  //   __dirname,
+  //   "..",
+  //   "..",
+  //   "Uploads",
+  //   "avatars",
+  //   filename
+  // );
+  // console.log("Attempting to delete file:", filePath);
+
+  // try {
+  //   if (fs.existsSync(filePath)) {
+  //     fs.unlinkSync(filePath);
+  //     logger.info(`Deleted avatar file: ${filename}`);
+  //   } else {
+  //     logger.warn(`Avatar file not found: ${filePath}`);
+  //   }
+  // } catch (err) {
+  //   logger.error(`Error deleting avatar file: ${err.message}`);
+  //   return next(
+  //     new AppError(`Failed to delete avatar file: ${err.message}`, 500)
+  //   );
+  // }
 
   try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-      logger.info(`Deleted avatar file: ${filename}`);
-    } else {
-      logger.warn(`Avatar file not found: ${filePath}`);
-    }
-  } catch (err) {
-    logger.error(`Error deleting avatar file: ${err.message}`);
+    await cloudinaryConfig.uploader.destroy(filename);
+    logger.info(`Deleted avatar from Cloudinary: ${filename}`);
+    userFound.avatar = {
+      url: "",
+      filename: "",
+      uploadedAt: null,
+    };
+    await userFound.save();
+    return res.status(200).json({
+      success: true,
+      message: "Avatar deleted successfully.",
+      url: null,
+    });
+  } catch (error) {
+     logger.error(`Error deleting avatar from Cloudinary: ${err.message}`);
     return next(
-      new AppError(`Failed to delete avatar file: ${err.message}`, 500)
+      new AppError(`Failed to delete avatar: ${err.message}`, 500)
     );
   }
 
-  userFound.avatar = {
-    filename: "",
-    url: "",
-    uploadedAt: null,
-  };
-  await userFound.save();
-  return res.status(200).json({
-    success: true,
-    message: "Avatar Deleted successfully.",
-    url: null,
-  });
+
 });
 
 export const UpdateImage = CustomTryCatch(async (req, res, next) => {
