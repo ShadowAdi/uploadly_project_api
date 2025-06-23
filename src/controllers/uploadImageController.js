@@ -8,6 +8,7 @@ import { processAvatarImage } from "../utils/imageProcessor.js";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { isNsfw } from "../config/nsfw.js";
+import { cloudinaryConfig } from "../config/cloudinary_config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -76,13 +77,13 @@ export const UploadImage = CustomTryCatch(async (req, res, next) => {
     return next(new AppError(`User With email Do Not Exist: ${email}`, 404));
   }
 
-  const oldFileName = req.user.avatar?.filename;
-  if (oldFileName) {
-    const oldPath = path.join("uploads", "avatars", oldFileName);
-    if (fs.existsSync(oldPath)) {
-      fs.unlinkSync(oldPath);
-    }
-  }
+  // const oldFileName = req.user.avatar?.filename;
+  // if (oldFileName) {
+  //   const oldPath = path.join("uploads", "avatars", oldFileName);
+  //   if (fs.existsSync(oldPath)) {
+  //     fs.unlinkSync(oldPath);
+  //   }
+  // }
 
   try {
     const { buffer, mimetype, originalname } = req.file;
@@ -91,18 +92,40 @@ export const UploadImage = CustomTryCatch(async (req, res, next) => {
     return next(new AppError("NSFW image detected. Upload denied.", 400));
   }
 
-  const { fileName, url } = await processAvatarImage(req.file.buffer, sub);
-  userFound.avatar = {
-    filename: fileName,
-    url: url,
-    uploadedAt: new Date(),
-  };
-  await userFound.save();
-  return res.status(200).json({
-    success: true,
-    message: "Avatar uploaded successfully.",
-    url,
-  });
+  try {
+    if (userFound.avatar?.filename) {
+      await cloudinaryConfig.uploader.destroy(userFound.avatar.filename);
+    }
+
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinaryConfig.uploader.upload_stream(
+        {
+          folder: `avatars/${sub}`,
+          resource_type: "image",
+          public_id: `avatar_${sub}_${Date.now()}`,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+    userFound.avatar = {
+      filename: uploadResult.public_id,
+      url: uploadResult.secure_url,
+      uploadedAt: new Date(),
+    };
+    await userFound.save();
+    return res.status(200).json({
+      success: true,
+      message: "Avatar uploaded successfully.",
+      url: uploadResult.secure_url,
+    });
+  } catch (error) {
+    logger.error(`Failed to upload image to Cloudinary: ${error.message}`);
+    return next(new AppError("Failed to upload image", 500));
+  }
 });
 
 export const DeleteImage = CustomTryCatch(async (req, res, next) => {
