@@ -21,9 +21,10 @@ A secure and scalable RESTful API that allows users to upload, retrieve, update,
 - **JWT** for authentication
 - **Cloudinary** for image hosting
 - **Sharp** for image processing
-- **NSFWJS** or API-based moderation
+- **winston** for logger
+- **sightengine** or API-based moderation
 - **Multer** for image upload
-- **Helmet**, **CORS**, and **rate-limiter-flexible** for security
+-  **CORS**, and **express-rate-limit** for security
 
 ## 📁 Folder Structure
 
